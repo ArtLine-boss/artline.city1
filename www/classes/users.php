@@ -1,0 +1,114 @@
+<?php
+
+class classes_users extends core_DBObject
+{
+    var $USER_LOGIN = null;
+    var $USER_PASSWORD = null;
+    var $USER_HASH = null;
+    var $USER_IP = null;
+    var $USER_FIO = null;
+    var $USER_POST = null;
+    var $USER_PER = null;
+    var $USER_OP = null;
+    var $USER_MAIL = null;
+    var $DT1 = null;
+    var $DT2 = null;
+    var $info = null;
+    var $cl_id = null;
+    var $id_bitrix24 = null;
+    var $reset_password = null;
+    var $color_default = null;
+    var $USER_STATUS = null;
+
+    public function __construct()
+    {
+        parent::__construct('users', 'ID');
+    }
+
+    /**
+     * Создание объекта по логину
+     * @param $login
+     * @return static|null
+     */
+    public static function newByLogin($login)
+    {
+        $user = new static();
+        if ($user->LoadByLogin($login)) {
+            return null;
+        }
+        return $user;
+    }
+
+    public function LoadByLogin($login)
+    {
+        $msg = null;
+
+        do {
+            $where = array(
+                'sql' => 'user_login=:user_login AND USER_STATUS=:USER_STATUS',
+                'param' => array(
+                    'user_login' => $login,
+                    'USER_STATUS' => 1
+                )
+            );
+            $currentUser = $this->loadAll($where, null, null, 1);
+            if (count($currentUser) !== 1) {
+                $msg = 'Пользователь не найден';
+                break;
+            }
+            if (null !== ($msg = ($this->bind($currentUser[0]))))
+                break;
+        } while (false);
+
+        return $msg;
+    }
+
+    /**
+     * Получение списка дизайнеров
+     * @return static[]
+     */
+    public static function getListDesign()
+    {
+        $class = new static();
+        return $class->loadAll(
+            [
+                'sql' => 'USER_PER = 5 AND USER_STATUS = 1'
+            ],
+            'USER_FIO'
+        );
+    }
+
+    /**
+     * Возврат параметра
+     * @param $field
+     * @return mixed|null
+     */
+    public function getInfoByField($field)
+    {
+        if (!$this->info || !API::isJSON($this->info)) {
+            return null;
+        }
+        $info = json_decode($this->info, true);
+        if (isset($info[$field])) {
+            return $info[$field];
+        }
+
+        return null;
+    }
+
+    /**
+     * Установка параметра
+     * @param $field
+     * @param $value
+     * @return void
+     */
+    public function setInfoByField($field, $value)
+    {
+        $info = [];
+        if ($this->info && API::isJSON($this->info)) {
+            $info = json_decode($this->info, true);
+        }
+        $info[$field] = $value;
+        $this->info = json_encode($info);
+    }
+}
